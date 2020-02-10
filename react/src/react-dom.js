@@ -1,5 +1,5 @@
-function _buildNewDom(vnode) {
-  return typeof vnode === 'string' ? document.createTextNode(vnode) : document.createElement(vnode.tag);
+function _buildDom(vDom) {
+  return typeof vDom === 'string' ? document.createTextNode(vDom) : document.createElement(vDom.tag);
 }
 
 function _setSingleAttribute(dom, name, value) {
@@ -41,42 +41,63 @@ function _setAttributes(dom, attrs) {
   });
 }
 
-function _reconciliation(vnode, dom, container) {
-  if (typeof vnode === 'string') {
-    if (!dom) {
-      container.appendChild(_buildNewDom(vnode));
-    } else if (dom.nodeType !== Node.TEXT_NODE) {
-      container.replaceChild(dom, _buildNewDom(vnode));
-    } else if (dom.textContent !== vnode) {
-      dom.textContent = vnode;
+function _reconcile(vDom, bundle) {
+  const { dom: preDom, container, vDom: prevVDom } = bundle;
+
+  // 处理dom
+  let dom = preDom;
+  if (!dom) {
+    // 初始添加
+    dom = _buildDom(vDom);
+    container.appendChild(dom);
+  } else if (prevVDom.tag && prevVDom.tag !== vDom.tag) {
+    // 替换
+    dom = _buildDom(vDom);
+    bundle = createBundle(vDom, dom, container);
+    container.replaceChild(dom, preDom);
+  } else {
+    // 更新
+    if (typeof vDom === 'string' && dom.textContent !== vDom) {
+      dom.textContent = vDom;
     }
 
-    return;
+    const childrenDomToRemove = dom && [].slice.call(dom.childNodes, (vDom.children || []).length) || [];
+    childrenDomToRemove.forEach(child => dom.removeChild(child));
   }
 
-  let newDom = dom;
-  if (!dom) {
-    newDom = _buildNewDom(vnode);
-    container.appendChild(newDom);
-  } else if (dom.nodeType !== Node.ELEMENT_NODE) {
-    newDom = _buildNewDom(vnode);
-    container.replaceChild(dom, newDom);
+  // 处理attr
+  _setAttributes(dom, vDom.attrs);
+
+  // 处理chirldren
+  if (vDom.children) {
+    bundle.childrenBundle = vDom.children.map((child, index) => (
+      _reconcile(child, bundle.childrenBundle[index] || createBundle(child, null, dom)
+    )));
   }
-  
-  _setAttributes(newDom, vnode.attrs);
 
-  vnode.children.forEach((child, index) => _reconciliation(child, dom && dom.childNodes[index], newDom));
-
-  const childrenDomToRemove = dom && [].slice.call(dom.childNodes, vnode.children.length) || [];
-  childrenDomToRemove.forEach(child => newDom.removeChild(child));
+  bundle.vDom = vDom;
+  bundle.dom = dom;
+  return bundle;
 }
 
-function reconciliation(vnode, container) {
-  return _reconciliation(vnode, container.childNodes[0], container);
+function createBundle(vDom, dom, container) {
+  return {
+    vDom,
+    dom,
+    container,
+    childrenBundle: []
+  }
+}
+
+function reconcile(vDom, container) {
+  if (!container.bundle) {
+    container.bundle = createBundle(vDom, null, container)
+  }
+  return _reconcile(vDom, container.bundle);
 }
 
 export default {
-  render: (vnode, container) => {
-    return reconciliation(vnode, container);
+  render: (vDom, container) => {
+    return reconcile(vDom, container);
   }
 };

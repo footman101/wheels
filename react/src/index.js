@@ -23,10 +23,13 @@ setTimeout(() => {
   ReactDOM.render(
     (
       <div style="color: blue">
-        <div>
-          1111
-        </div>
+        sgergre
         <h1>dsfasdf</h1>
+        <h2>sgewtrgwrt</h2>
+        <div>
+          <p>342</p>
+          <p>fg</p>
+        </div>
       </div>
     ),
     document.getElementById('root')
