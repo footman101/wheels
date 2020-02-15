@@ -42,10 +42,39 @@ function _setAttributes(dom, attrs) {
 }
 
 function _reconcile(vDom, bundle) {
-  const { dom: preDom, container, vDom: prevVDom } = bundle;
+  const { dom: preDom, container, vDom: prevVDom, component: prevComponent, childrenBundle: prevChildBundle } = bundle;
+
+  let component = prevComponent;
+  if (typeof vDom.tag === 'function') {
+    if (component && component.constructor === vDom.tag) {
+      component.componentWillUpdate();
+      component.props = vDom.attrs;
+      const newVDom = component.render();
+      const result = _reconcile(newVDom, createBundle(bundle.vDom, bundle.dom, bundle.container, null, bundle.childrenBundle));
+      component.componentDidUpdate();
+      return result;
+    } else {
+      if (prevComponent) {
+        prevComponent.componentWillUnmount();
+      }
+      component = new vDom.tag(vDom.attrs);
+      component.constructor = vDom.tag;
+      component.componentWillMount();
+      const newVDom = component.render();
+      const result = _reconcile(newVDom, createBundleWithContainer(bundle.container));
+      result.component = component;
+      component.componentDidMount();
+      return result;
+    }
+  }
+
+  if (prevComponent) {
+    prevComponent.componentWillUnmount();
+  }
 
   // 处理dom
   let dom = preDom;
+  let childrenBundle = prevChildBundle;
   if (!dom) {
     // 初始添加
     dom = _buildDom(vDom);
@@ -53,10 +82,9 @@ function _reconcile(vDom, bundle) {
   } else if (prevVDom.tag && prevVDom.tag !== vDom.tag) {
     // 替换
     dom = _buildDom(vDom);
-    bundle = createBundle(vDom, dom, container);
     container.replaceChild(dom, preDom);
-  } else {
-    // 更新
+    childrenBundle = [];
+  } else {    // 更新
     if (typeof vDom === 'string' && dom.textContent !== vDom) {
       dom.textContent = vDom;
     }
@@ -68,32 +96,40 @@ function _reconcile(vDom, bundle) {
   // 处理attr
   _setAttributes(dom, vDom.attrs);
 
-  // 处理chirldren
+  // 处理children
   if (vDom.children) {
-    bundle.childrenBundle = vDom.children.map((child, index) => (
-      _reconcile(child, bundle.childrenBundle[index] || createBundle(child, null, dom)
+    childrenBundle = vDom.children.map((child, index) => (
+      _reconcile(child, childrenBundle[index] || createBundleWithContainer(dom)
     )));
+  } else {
+    childrenBundle = [];
   }
 
-  bundle.vDom = vDom;
-  bundle.dom = dom;
-  return bundle;
+  return {
+    vDom,
+    dom,
+    childrenBundle,
+    container,
+    component
+  };
 }
 
-function createBundle(vDom, dom, container) {
+function createBundle(vDom, dom, container, component, childrenBundle = []) {
   return {
     vDom,
     dom,
     container,
-    childrenBundle: []
+    childrenBundle,
+    component
   }
 }
 
+function createBundleWithContainer(container) {
+  return createBundle(null, null, container, null)
+}
+
 function reconcile(vDom, container) {
-  if (!container.bundle) {
-    container.bundle = createBundle(vDom, null, container)
-  }
-  return _reconcile(vDom, container.bundle);
+  container.bundle = _reconcile(vDom, container.bundle || createBundleWithContainer(container));
 }
 
 export default {

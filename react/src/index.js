@@ -1,16 +1,18 @@
 import React from './react';
 import ReactDOM from './react-dom';
 
+class App extends React.Component {
+  render() {
+    return <div>App {this.props.text}</div>;
+  }
+}
+
 const vnode = () => (
   <div style="color: pink">
     <div>
       sdfasdf
     </div>
-    <h1>Hello, world!</h1>
-    <h1>Hello, world!</h1>
-    <h1>Hello, world!</h1>
-    <h1>Hello, world!</h1>
-    <h2>It is {new Date().toLocaleTimeString()}.</h2>
+    <App text="hello" />
   </div>
 );
 
@@ -24,12 +26,10 @@ setTimeout(() => {
     (
       <div style="color: blue">
         sgergre
-        <h1>dsfasdf</h1>
-        <h2>sgewtrgwrt</h2>
-        <div>
-          <p>342</p>
-          <p>fg</p>
-        </div>
+        <div>dfasd</div>
+        <App text="hello1111" />
+        <App text="hello1111" />
+        <App text="hello1111" />
       </div>
     ),
     document.getElementById('root')
