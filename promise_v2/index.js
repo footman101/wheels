@@ -6,14 +6,6 @@ const isObject = (value) => {
   return typeof value === 'object' && value !== null;
 };
 
-const once = (func) => {
-  let called = false;
-  return () => {
-    if (!called) func();
-    called = true;
-  };
-};
-
 const State = {
   PENDING: 'PENDING',
   FULFILLED: 'FULFILLED',
@@ -86,19 +78,7 @@ const resolve = (promise) => (x) => {
     return;
   }
   if (x instanceof Promise) {
-    const xInternal = getInternal(x);
-    if (xInternal.state === State.PENDING) {
-      x.then(resolve, reject);
-      return;
-    }
-    if (xInternal.state === State.FULFILLED) {
-      resolve(xInternal.result);
-      return;
-    }
-    if (xInternal.state === State.REJECTED) {
-      reject(xInternal.result);
-      return;
-    }
+    x.then(resolve, reject);
   }
   if (isFunction(x) || isObject(x)) {
     let then;
@@ -169,6 +149,6 @@ class Promise {
 }
 
 Promise.resolve = (result) => new Promise((resolve) => resolve(result));
-Promise.reject = (reason) => new Promise((_, reject) => reject(reason));
+Promise.reject = (reason) => new Promise((resolve, reject) => reject(reason));
 
 module.exports = Promise;
