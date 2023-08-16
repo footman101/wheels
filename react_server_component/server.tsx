@@ -1,4 +1,5 @@
-import { HttpResponse, NHttp } from 'https://deno.land/x/nhttp@0.7.2/mod.ts';
+import nhttp, { HttpResponse } from 'https://deno.land/x/nhttp@1.3.7/mod.ts';
+import serveStatic from 'https://deno.land/x/nhttp@1.3.7/lib/serve-static.ts';
 import React from 'npm:react';
 import type {} from 'npm:@types/react';
 import type {} from 'npm:@types/react-dom';
@@ -10,14 +11,16 @@ import BlogIndexPage from './components/BlogIndexPage.tsx';
 import BlogLayout from './components/BlogPostLayout.tsx';
 import { isNotFoundError } from './throwNotFound.ts';
 
-const app = new NHttp();
+const app = nhttp();
 
 app.use((rev, next) => {
   console.log('req', rev.url);
   return next();
 });
 
-const makeHtmlResponse = async (response: HttpResponse, page: any) => {
+app.use('/assets', serveStatic('assets'));
+
+const makeHtmlResponse = async (response: HttpResponse, page: JSX.Element) => {
   let body = '';
   try {
     body = await renderJSXToHTML(<BlogLayout>{page}</BlogLayout>);
@@ -38,14 +41,12 @@ const makeHtmlResponse = async (response: HttpResponse, page: any) => {
 };
 
 app.get('/', (rev) => {
-  const page = <BlogIndexPage />;
-  makeHtmlResponse(rev.response, page);
+  makeHtmlResponse(rev.response, <BlogIndexPage />);
 });
 
 app.get('/:slug', (rev) => {
   const postSlug = sanitizeFilename(rev.params.slug);
-  const page = <BlogPostPage postSlug={postSlug} />;
-  makeHtmlResponse(rev.response, page);
+  makeHtmlResponse(rev.response, <BlogPostPage postSlug={postSlug} />);
 });
 
 app.listen(9000, () => {

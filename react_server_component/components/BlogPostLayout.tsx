@@ -15,6 +15,7 @@ const BlogLayout = ({ children }: React.PropsWithChildren) => {
         </nav>
         <main>{children}</main>
         <Footer author={author} />
+        <script type="module" src="/assets/client.js"></script>
       </body>
     </html>
   );
