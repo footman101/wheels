@@ -1,7 +1,7 @@
 import Footer from './Footer.tsx';
-import * as React from 'https://jspm.dev/react@18.2.0';
+import React from 'npm:react';
 
-function BlogLayout({ children }) {
+const BlogLayout = ({ children }: React.PropsWithChildren) => {
   const author = 'Jae Doe';
   return (
     <html>
@@ -18,6 +18,6 @@ function BlogLayout({ children }) {
       </body>
     </html>
   );
-}
+};
 
 export default BlogLayout;

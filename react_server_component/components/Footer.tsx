@@ -1,4 +1,4 @@
-import * as React from 'https://jspm.dev/react@18.2.0';
+import React from 'npm:react';
 
 function Footer({ author }: { author: string }) {
   return (

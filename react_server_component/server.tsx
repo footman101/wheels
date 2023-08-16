@@ -1,59 +1,51 @@
 import { HttpResponse, NHttp } from 'https://deno.land/x/nhttp@0.7.2/mod.ts';
+import React from 'npm:react';
+import type {} from 'npm:@types/react';
+import type {} from 'npm:@types/react-dom';
+import sanitizeFilename from 'npm:sanitize-filename';
+
 import renderJSXToHTML from './renderJSXToHTML.ts';
-import * as React from 'https://jspm.dev/react@18.2.0';
 import BlogPostPage from './components/BlogPostPage.tsx';
 import BlogIndexPage from './components/BlogIndexPage.tsx';
 import BlogLayout from './components/BlogPostLayout.tsx';
-
-import sanitizeFilename from 'npm:sanitize-filename';
-import throwNotFound from './throwNotFound.tsx';
+import { isNotFoundError } from './throwNotFound.ts';
 
 const app = new NHttp();
 
-const makeResponse = (response: HttpResponse, page: any) => {
+app.use((rev, next) => {
+  console.log('req', rev.url);
+  return next();
+});
+
+const makeHtmlResponse = async (response: HttpResponse, page: any) => {
+  let body = '';
+  try {
+    body = await renderJSXToHTML(<BlogLayout>{page}</BlogLayout>);
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      response.status(404);
+    } else {
+      response.status(500);
+    }
+
+    response.send(`${error.message} ${error.cause}`);
+  }
+
   response.header({
     'content-type': 'text/html',
   });
-  response.send(renderJSXToHTML(<BlogLayout>{page}</BlogLayout>));
+  response.send(body);
 };
 
-app.get('/', async (rev) => {
-  console.log('req', rev.url);
-
-  const postSlugs = [];
-  const postContents = [];
-
-  for await (const dirEntry of Deno.readDir('./posts')) {
-    const fileName = dirEntry.name;
-    postSlugs.push(fileName.slice(0, fileName.lastIndexOf('.')));
-
-    const decoder = new TextDecoder('utf-8');
-    const data = await Deno.readFile(`./posts/${fileName}`);
-    postContents.push(decoder.decode(data));
-  }
-
-  const page = (
-    <BlogIndexPage postContents={postContents} postSlugs={postSlugs} />
-  );
-
-  makeResponse(rev.response, page);
+app.get('/', (rev) => {
+  const page = <BlogIndexPage />;
+  makeHtmlResponse(rev.response, page);
 });
 
-app.get('/*', async (rev) => {
-  console.log('req', rev.url);
-  const postSlug = sanitizeFilename(rev.path.slice(1));
-
-  try {
-    const postPath = './posts/' + postSlug + '.txt';
-    const decoder = new TextDecoder('utf-8');
-    const data = await Deno.readFile(postPath);
-    const postContent = decoder.decode(data);
-    const page = <BlogPostPage postSlug={postSlug} postContent={postContent} />;
-
-    makeResponse(rev.response, page);
-  } catch (err) {
-    throwNotFound(rev.response, err);
-  }
+app.get('/:slug', (rev) => {
+  const postSlug = sanitizeFilename(rev.params.slug);
+  const page = <BlogPostPage postSlug={postSlug} />;
+  makeHtmlResponse(rev.response, page);
 });
 
 app.listen(9000, () => {

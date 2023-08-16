@@ -1,12 +1,15 @@
 import escapeHtml from 'npm:escape-html';
 
-function renderJSXToHTML(jsx) {
+async function renderJSXToHTML(jsx: JSX.Element): Promise<string> {
   if (typeof jsx === 'string' || typeof jsx === 'number') {
     return escapeHtml(jsx);
   } else if (jsx == null || typeof jsx === 'boolean') {
     return '';
   } else if (Array.isArray(jsx)) {
-    return jsx.map((child) => renderJSXToHTML(child)).join('');
+    const childHtmls = await Promise.all(
+      jsx.map((child) => renderJSXToHTML(child))
+    );
+    return childHtmls.join('');
   } else if (typeof jsx === 'object') {
     if (jsx.$$typeof === Symbol.for('react.element')) {
       if (typeof jsx.type === 'string') {
@@ -20,13 +23,13 @@ function renderJSXToHTML(jsx) {
           }
         }
         html += '>';
-        html += renderJSXToHTML(jsx.props.children);
+        html += await renderJSXToHTML(jsx.props.children);
         html += '</' + jsx.type + '>';
         return html;
       } else if (typeof jsx.type === 'function') {
         const Component = jsx.type;
         const props = jsx.props;
-        const returnedJsx = Component(props);
+        const returnedJsx = await Component(props);
         return renderJSXToHTML(returnedJsx);
       } else throw new Error('Not implemented.');
     } else throw new Error('Cannot render an object.');

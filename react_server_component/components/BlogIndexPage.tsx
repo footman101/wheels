@@ -1,17 +1,20 @@
-import * as React from 'https://jspm.dev/react@18.2.0';
+import React from 'npm:react';
+import Post from './Post.tsx';
 
-function BlogIndexPage({ postSlugs, postContents }) {
+async function BlogIndexPage() {
+  const postSlugs = [];
+
+  for await (const dirEntry of Deno.readDir('./posts')) {
+    const fileName = dirEntry.name;
+    postSlugs.push(fileName.slice(0, fileName.lastIndexOf('.')));
+  }
+
   return (
     <section>
       <h1>Welcome to my blog</h1>
       <div>
-        {postSlugs.map((postSlug, index) => (
-          <section key={postSlug}>
-            <h2>
-              <a href={'/' + postSlug}>{postSlug}</a>
-            </h2>
-            <article>{postContents[index]}</article>
-          </section>
+        {postSlugs.map((postSlug) => (
+          <Post slug={postSlug} key={postSlug} />
         ))}
       </div>
     </section>

@@ -1,15 +1,8 @@
-import Footer from './Footer.tsx';
-import * as React from 'https://jspm.dev/react@18.2.0';
+import React from 'npm:react';
+import Post from './Post.tsx';
 
-function BlogPostPage({ postSlug, postContent }) {
-  return (
-    <section>
-      <h2>
-        <a href={'/' + postSlug}>{postSlug}</a>
-      </h2>
-      <article>{postContent}</article>
-    </section>
-  );
+function BlogPostPage({ postSlug }: { postSlug: string }) {
+  return <Post slug={postSlug} />;
 }
 
 export default BlogPostPage;
