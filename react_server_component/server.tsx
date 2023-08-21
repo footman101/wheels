@@ -5,7 +5,8 @@ import type {} from 'npm:@types/react';
 import type {} from 'npm:@types/react-dom';
 
 import Router from './components/Router.tsx';
-import renderJSXToHTML from './utils/renderJSXToHTML.ts';
+import sendHtml from './utils/sendHtml.tsx';
+import sendJSX from './utils/sendJSX.tsx';
 
 const app = nhttp();
 
@@ -16,13 +17,12 @@ app.use((rev, next) => {
 
 app.use('/assets', serveStatic('assets'));
 
-app.get('*', async ({ response, path }) => {
-  const body = await renderJSXToHTML(<Router path={path} />);
-
-  response.header({
-    'content-type': 'text/html',
-  });
-  response.send(body);
+app.get('*', ({ response, path, query }) => {
+  if (Object.hasOwn(query, 'jsx')) {
+    sendJSX(response, <Router path={path} />);
+  } else {
+    sendHtml(response, <Router path={path} />);
+  }
 });
 
 app.listen(9000, () => {

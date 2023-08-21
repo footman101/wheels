@@ -8,7 +8,8 @@ const Post = async ({ slug }: { slug: string }) => {
   try {
     content = await readFile(`./posts/${sanitizeFilename(slug)}.txt`);
   } catch (err) {
-    throw new HttpError(404, `post ${slug} not found`);
+    content = '404';
+    // throw new HttpError(404, `post ${slug} not found`);
   }
 
   return (

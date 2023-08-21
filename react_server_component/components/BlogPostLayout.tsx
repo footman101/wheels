@@ -9,13 +9,13 @@ const BlogLayout = ({ children }: React.PropsWithChildren) => {
         <title>My blog</title>
       </head>
       <body>
+        <input />
         <nav>
           <a href="/">Home</a>
           <hr />
         </nav>
         <main>{children}</main>
         <Footer author={author} />
-        <script type="module" src="/assets/client.js"></script>
       </body>
     </html>
   );
