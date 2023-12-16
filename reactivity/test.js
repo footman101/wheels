@@ -1,6 +1,7 @@
 import test from 'node:test';
 import { effect, track, trigger } from './index.js';
 import assert from 'assert';
+import { scheduler } from 'timers/promises';
 
 const makeReactive = (obj) => {
   const reactiveObj = new Proxy(obj, {
@@ -85,5 +86,75 @@ test('can set value in effect', (t) => {
   obj.count = 10;
 
   assert.strictEqual(obj.count, 11);
+});
+
+test('support scheduler', (t) => {
+  const obj = makeReactive({ count: 0 });
+  effect(
+    () => {
+      obj.count += 1;
+    },
+    {
+      scheduler: (fn) => {
+        setTimeout(fn);
+      },
+    }
+  );
+
+  obj.count = 10;
+  assert.strictEqual(obj.count, 10);
+  return new Promise((r) => {
+    setTimeout(() => {
+      assert.strictEqual(obj.count, 11);
+      r();
+    });
+  });
+});
+
+test('support scheduler for batch flush', async (t) => {
+  const obj2 = makeReactive({ count: 0 });
+  const jobQueue = new Set();
+  let isFlushing = false;
+  const flushJob = () => {
+    if (isFlushing) {
+      return;
+    }
+    isFlushing = true;
+
+    Promise.resolve()
+      .then(() => {
+        jobQueue.forEach((fn) => {
+          fn();
+        });
+        jobQueue.clear();
+      })
+      .finally(() => {
+        isFlushing = false;
+      });
+  };
+  let effectRunTime = 0;
+  effect(
+    () => {
+      effectRunTime++;
+      obj2.count;
+    },
+    {
+      scheduler: (fn) => {
+        jobQueue.add(fn);
+        flushJob();
+      },
+    }
+  );
+
+  obj2.count = 10;
+  obj2.count = 11;
+  obj2.count = 12;
+
+  return new Promise((r) => {
+    setTimeout(() => {
+      assert.strictEqual(effectRunTime, 2);
+      r();
+    });
+  });
 });
 

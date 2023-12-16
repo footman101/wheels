@@ -15,17 +15,38 @@ const makeReactive = (obj) => {
   return reactiveObj;
 };
 
-const obj = makeReactive({ ok: true, text: 'hello world' });
-effect(() => {
-  console.log('parentEffectRun');
+const obj2 = makeReactive({ count: 0 });
+const jobQueue = new Set();
+let isFlushing = false;
+const flushJob = () => {
+  if (isFlushing) {
+    return;
+  }
+  isFlushing = true;
 
-  effect(() => {
-    console.log('childEffectRun');
-    obj.ok;
-  });
+  Promise.resolve()
+    .then(() => {
+      jobQueue.forEach((fn) => {
+        fn();
+      });
+      jobQueue.clear();
+    })
+    .finally(() => {
+      isFlushing = false;
+    });
+};
+effect(
+  () => {
+    console.log(obj2.count);
+  },
+  {
+    scheduler: (fn) => {
+      jobQueue.add(fn);
+      flushJob();
+    },
+  }
+);
 
-  obj.text;
-});
-
-obj.text = '1234';
-obj.ok = false;
+obj2.count = 10;
+obj2.count = 11;
+obj2.count = 12;

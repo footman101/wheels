@@ -2,7 +2,7 @@ const targetMap = new WeakMap();
 let activeEffect = null;
 const effectStack = [];
 
-function effect(fn) {
+function effect(fn, options) {
   const effectFn = () => {
     // fn中可能有条件分支，每次运行的时候都要重新收集一次依赖
     cleanUp(effectFn);
@@ -15,6 +15,7 @@ function effect(fn) {
   };
 
   effectFn.deps = [];
+  effectFn.options = options ?? {};
 
   effectFn();
 }
@@ -49,7 +50,12 @@ function trigger(target, key) {
     if (effect === activeEffect) {
       return;
     }
-    effect();
+
+    if (effect.options.scheduler) {
+      effect.options.scheduler(effect);
+    } else {
+      effect();
+    }
   });
 }
 
