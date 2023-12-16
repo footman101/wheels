@@ -63,3 +63,4 @@ typings/
 # custom
 .cache
 dist
+.DS_Store

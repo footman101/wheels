@@ -1,14 +1,17 @@
 const targetMap = new WeakMap();
 let activeEffect = null;
+const effectStack = [];
 
 function effect(fn) {
   const effectFn = () => {
     // fn中可能有条件分支，每次运行的时候都要重新收集一次依赖
     cleanUp(effectFn);
     activeEffect = effectFn;
+    effectStack.push(effectFn);
     // 实际运行有副作用的函数，收集该副作用的依赖
     fn();
-    activeEffect = null;
+    effectStack.pop();
+    activeEffect = effectStack[effectStack.length - 1] ?? null;
   };
 
   effectFn.deps = [];
@@ -43,12 +46,11 @@ function trigger(target, key) {
   // 运行effect函数会重新将所有的依赖解绑并重新绑定，可能会从set中清除并重新添加，可能会导致死循环
   const effectsToRun = new Set(deps);
   effectsToRun.forEach((effect) => {
+    if (effect === activeEffect) {
+      return;
+    }
     effect();
   });
 }
 
-module.exports = {
-  effect,
-  track,
-  trigger,
-};
+export { effect, track, trigger };
