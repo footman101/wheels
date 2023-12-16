@@ -47,24 +47,8 @@ function trigger(target, key) {
   });
 }
 
-const obj = new Proxy(
-  { ok: true, text: 'hello world' },
-  {
-    get(target, key) {
-      track(target, key);
-      return target[key];
-    },
-    set(target, key, newVal) {
-      target[key] = newVal;
-      trigger(target, key);
-    },
-  }
-);
-
-effect(() => {
-  console.log(obj.ok ? obj.text : 'not');
-});
-
-obj.text = '123';
-obj.ok = false;
-obj.text = '121231';
+module.exports = {
+  effect,
+  track,
+  trigger,
+};
